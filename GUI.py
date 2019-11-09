@@ -248,7 +248,6 @@ class simpleapp_tk(tk.Tk):
         
         
         
-#LOGIC#########################
 """
 combo = 14
 impulse = 13
