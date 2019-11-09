@@ -4,7 +4,7 @@ from cx_Freeze import setup, Executable
 includeFiles = ['preset.ini']
 bdist_msi_options = {
     'add_to_path': False,
-    'initial_target_dir': r'[ProgramFilesFolder]\BPC',
+    'initial_target_dir': r'[ProgramFilesFolder]\LanxCalc',
     }
 setup(
     name = "LanxCalc",
