@@ -1,7 +1,8 @@
 import tkinter as tk
 from tkinter import ttk
+from tkinter import messagebox
 
-class simpleapp_tk(tk.Tk):
+class LanxCalc(tk.Tk):
     def __init__(self,parent):
         tk.Tk.__init__(self,parent)
         self.parent = parent
@@ -66,9 +67,16 @@ class simpleapp_tk(tk.Tk):
         else:
             return int(digit)
     def calculate(self):
-        self.combo = int(self.combustionEntry.get())
-        self.impulse = int(self.impulseEntry.get())
-        self.hyper = int(self.hyperEntry.get())
+        try:
+            self.combo = int(self.combustionEntry.get())
+            self.impulse = int(self.impulseEntry.get())
+            self.hyper = int(self.hyperEntry.get())
+        except:
+            messagebox.showinfo("Bad input", "Drive levels invalid!")
+            return
+        if self.classCombo.get() == "":
+            messagebox.showinfo("Bad input", "Player class not selected!")
+            return #don't want multiple pesky messageboxes at once, do we?
         drives = [self.combo,self.impulse,self.hyper]
         self.uniSpeed = int(self.uniSpeedCombo.get())
         self.donutGalaxy = self.donutGalaxyVar.get()
@@ -76,25 +84,44 @@ class simpleapp_tk(tk.Tk):
         self.numberOfGalaxies = int(self.numberofGalaxiesCombo.get())
         self.travelSpeed = int(self.assumedSpeedCombo.get())
         ships = createShips(drives)
-        origin = [int(self.fromGalaxyText.get()),int(self.fromSolarText.get()),int(self.fromSlotText.get())]
-        destination = [int(self.toGalaxyText.get()),int(self.toSolarText.get()),int(self.toSlotText.get())]
+        try:
+            origin = [int(self.fromGalaxyText.get()),int(self.fromSolarText.get()),int(self.fromSlotText.get())]
+        except:
+            messagebox.showinfo("Bad input", "Origin coordinates invalid!")
+        try:
+            destination = [int(self.toGalaxyText.get()),int(self.toSolarText.get()),int(self.toSlotText.get())]
+        except:
+            messagebox.showinfo("Bad input", "Destination coordinates invalid!")
         distance1 = Distance(origin, destination, self.donutGalaxy,self.donutSystem,self.numberOfGalaxies)
+        ship = False #kinda crappy patch for recognizing if ship wasn't selected, gonna try format it better in the future
         for i in range(len(ships)):
             if ships[i].name==self.slowestShipCombo.get():
                 ship = ships[i]
+        if not ship:
+            messagebox.showinfo("Bad input", "Slowest ship not selected!")
+            return
         travelTime = TravelTime(ship,distance1,self.travelSpeed,self.uniSpeed)
-        arrivalTime = [self.processInput(self.hourArrival.get()),self.processInput(self.minuteArrival.get()),self.processInput(self.secondArrival.get())]
+        try:
+            arrivalTime = [self.processInput(self.hourArrival.get()),self.processInput(self.minuteArrival.get()),self.processInput(self.secondArrival.get())]
+        except:
+            messagebox.showinfo("Bad input", "Arrival time invalid!")
         if len(self.scanDelayEntry.get())==0:
             scanDelay = 0
         else:
-            scanDelay = int(self.scanDelayEntry.get())
-        recallTime = [self.processRecall(self.recallHourEntry.get()),self.processRecall(self.recallMinuteEntry.get()),self.processRecall(self.recallSecondEntry.get())] #SERVER TIME, NOT ETA
+            try:
+                scanDelay = int(self.scanDelayEntry.get())
+            except:
+                messagebox.showinfo("Bad input", "Scan delay invalid!")
+        try:
+            recallTime = [self.processRecall(self.recallHourEntry.get()),self.processRecall(self.recallMinuteEntry.get()),self.processRecall(self.recallSecondEntry.get())] #SERVER TIME, NOT ETA
+        except:
+            messagebox.showinfo("Bad input", "Recall time invalid!")
         if recallTime == [0,0,0]: #making sure it doesn't make double return times on definite recalls like when fleet reaches planet
             recallTime = False
         returnTime = travelTime.getReturnTime(arrivalTime, scanDelay, recallTime)
         
         #assembling report
-        self.speedContent.configure(text=str(ship.getSpeed()))
+        self.speedContent.configure(text=str(ship.getSpeed(self.classCombo.get())))
         self.distanceContent.configure(text =str(distance1.getDistance()))
         self.travelTimeContent.configure(text=self.processOutput(travelTime.getFlightTime()[0])+":"+self.processOutput(travelTime.getFlightTime()[1])+":"+self.processOutput(travelTime.getFlightTime()[2]))
         if len(returnTime)==3: #this is single return time because it's being returned as a list so its len is 3 for hh mm ss
@@ -185,6 +212,10 @@ class simpleapp_tk(tk.Tk):
         hyperLabel.grid(row=3,column=0,columnspan = int(maxColumns/2),sticky = 'E')
         self.hyperEntry = tk.Entry(playerInfoFrame,justify = tk.CENTER, width = 10)
         self.hyperEntry.grid(row=3,column=10,columnspan = int(maxColumns/2),sticky = 'W')
+        self.classLabel = tk.Label(playerInfoFrame, justify = tk.CENTER, text = "Class:")
+        self.classLabel.grid(row=4,column=0,columnspan=int(maxColumns/2), sticky = 'E')
+        self.classCombo = ttk.Combobox(playerInfoFrame, values = ["Collector", "General", "Discoverer"], width = 10, state = 'readonly', justify = tk.CENTER)
+        self.classCombo.grid(row=4, column = 10, columnspan = int(maxColumns/2), sticky = 'W')
         #FLEET INFO
         fleetFrame = tk.Frame(self,relief=tk.GROOVE,borderwidth = 2)
         fleetFrame.grid(row=5, column=0, columnspan=maxColumns,sticky = 'NSEW')
@@ -204,7 +235,7 @@ class simpleapp_tk(tk.Tk):
         self.fromSlotText.insert(0,"1")
         slowestShipLabel = tk.Label(fleetFrame, justify = tk.CENTER, text = "Slowest ship in fleet:")
         slowestShipLabel.grid(row=2,column=0,columnspan = int(maxColumns/2),sticky = 'E')
-        self.slowestShipCombo = ttk.Combobox(fleetFrame, values = ["Small Cargo","Large Cargo", "Light Fighter", "Heavy Fighter", "Cruiser", "Battleship", "Colony Ship", "Recycler", "Bomber", "Destroyer","Deathstar", "Battlecruiser"],state = "readonly",width=12,justify = tk.CENTER)
+        self.slowestShipCombo = ttk.Combobox(fleetFrame, values = ["Small Cargo","Large Cargo", "Light Fighter", "Heavy Fighter", "Cruiser", "Battleship", "Colony Ship", "Recycler", "Bomber", "Destroyer","Deathstar", "Battlecruiser", "Reaper", "Pathfinder"],state = "readonly",width=12,justify = tk.CENTER)
         self.slowestShipCombo.grid(row=2,column = 10,columnspan = int(maxColumns/2),sticky='W')
         assumedSpeedLabel = tk.Label(fleetFrame,justify = tk.CENTER, text = "Assumed speed:")
         assumedSpeedLabel.grid(row=3,column=0,columnspan=int(maxColumns/2),sticky='E')
@@ -226,28 +257,29 @@ class simpleapp_tk(tk.Tk):
         resultFrame = tk.Frame(self,relief=tk.GROOVE,borderwidth = 2)
         resultFrame.grid(row=7,column=0,columnspan=maxColumns,sticky='NSEW')
         self.makeWeight(resultFrame,maxColumns)
-        speedCaption = tk.Label(resultFrame, justify = tk.CENTER, text = "Speed:")
-        speedCaption.grid(row=0,column=0,columnspan=int(maxColumns/2),sticky='E')
-        self.speedContent = tk.Label(resultFrame, justify = tk.CENTER, text = "(not calculated)")
-        self.speedContent.grid(row=0,column=10,columnspan=(int(maxColumns/2)),sticky='W')
-        distanceCaption = tk.Label(resultFrame, justify = tk.CENTER, text = "Distance:")
-        distanceCaption.grid(row=1,column=0,columnspan=int(maxColumns/2),sticky='E')
-        self.distanceContent = tk.Label(resultFrame, justify = tk.CENTER, text = "(not calculated)")
-        self.distanceContent.grid(row=1,column=10,columnspan=(int(maxColumns/2)),sticky='W')        
-        travelTimeCaption = tk.Label(resultFrame, justify =tk.CENTER, text = "Travel time (one way):")
-        travelTimeCaption.grid(row=2,column=0,columnspan=int(maxColumns/2), sticky = 'E')
-        self.travelTimeContent = tk.Label(resultFrame,justify = tk.CENTER, text = "(not calculated)")
-        self.travelTimeContent.grid(row=2,column=10,columnspan=int(maxColumns/2),sticky='W')
-        returnTimeCaption = tk.Label(resultFrame, justify = tk.CENTER, text = "Return time:")
-        returnTimeCaption.grid(row=3,column=0,columnspan=maxColumns)
-        self.returnTimeContent = tk.Label(resultFrame, justify = tk.CENTER, text = "(not calculated)")
-        self.returnTimeContent.grid(row=4,column=0,columnspan=maxColumns)
-        calculateButton = tk.Button(self,justify=tk.CENTER, text = "Calculate",command=self.calculate)
+        speedCaption = tk.Label(resultFrame, justify = tk.CENTER, text = "Speed:", font = ("Segoe UI",10,"bold"))
+        speedCaption.grid(row=0,column=0,columnspan=maxColumns)
+        self.speedContent = tk.Label(resultFrame, justify = tk.CENTER, text = "(not calculated)", font = ("Segoe UI",11))
+        self.speedContent.grid(row=1,column=0,columnspan=maxColumns)
+        distanceCaption = tk.Label(resultFrame, justify = tk.CENTER, text = "Distance:", font = ("Segoe UI",10,"bold"))
+        distanceCaption.grid(row=2,column=0,columnspan=maxColumns)
+        self.distanceContent = tk.Label(resultFrame, justify = tk.CENTER, text = "(not calculated)", font = ("Segoe UI",11))
+        self.distanceContent.grid(row=3,column=0,columnspan=maxColumns)        
+        travelTimeCaption = tk.Label(resultFrame, justify =tk.CENTER, text = "Travel time (one way):", font = ("Segoe UI",10,"bold"))
+        travelTimeCaption.grid(row=4,column=0,columnspan=maxColumns)
+        self.travelTimeContent = tk.Label(resultFrame,justify = tk.CENTER, text = "(not calculated)", font = ("Segoe UI",11))
+        self.travelTimeContent.grid(row=5,column=0,columnspan=maxColumns)
+        returnTimeCaption = tk.Label(resultFrame, justify = tk.CENTER, text = "Return time:", font = ("Segoe UI",10,"bold"))
+        returnTimeCaption.grid(row=6,column=0,columnspan=maxColumns)
+        self.returnTimeContent = tk.Label(resultFrame, justify = tk.CENTER, text = "(not calculated)", font = ("Segoe UI",11))
+        self.returnTimeContent.grid(row=7,column=0,columnspan=maxColumns)
+        calculateButton = tk.Button(self,justify=tk.CENTER, text = "Calculate",command=self.calculate, font = ("Segoe UI",10,"bold"))
         calculateButton.grid(row=8,column=0,columnspan=maxColumns)
         
         
         
         
+#LOGIC#########################
 """
 combo = 14
 impulse = 13
@@ -259,13 +291,14 @@ travelSpeed = 100
 uniSpeed = 6   ->this is just for reference and was used for testing
 """
 class Ship(object):
-    def __init__(self, name, baseSpeed, drive, drives):
+    def __init__(self, name, baseSpeed, drive, drives, shipType):
         self.name = name
         self.baseSpeed = baseSpeed
         self.drive = drive
         self.combo = drives[0]
         self.impulse = drives[1]
         self.hyper = drives[2]
+        self.shipType = shipType
         if self.name == "Small Cargo" and self.impulse>=5:
             self.drive = "Impulse"
             self.baseSpeed = 10000
@@ -287,7 +320,7 @@ class Ship(object):
         elif self.drive == "Hyper":
             self.multiplier = 0.3
         
-        self.speed = round(self.baseSpeed*(1+self.multiplier*self.getDriveLevel(self.drive)))
+        
     def getDriveLevel(self,drive):
         if drive == "Combustion":
             return self.combo
@@ -296,7 +329,15 @@ class Ship(object):
         elif drive == "Hyper":
             return self.hyper
 
-    def getSpeed(self):
+    def getSpeed(self, playerClass):
+        classBonus = 0
+        if playerClass == "General":
+            if (self.name == "Recycler" or self.shipType == "military") and self.name != "Deathstar":
+                classBonus = 0.25
+        elif playerClass == "Collector":
+            if self.name == "Small Cargo" or self.name == "Large Cargo":
+                classBonus = 0.25
+        self.speed = round(self.baseSpeed*(classBonus + 1 + self.multiplier*self.getDriveLevel(self.drive)))
         return int(self.speed)
     
 class Distance(object):
@@ -350,7 +391,7 @@ class TravelTime(object):
         self.flightSpeed = flightSpeed
         self.uniSpeed = uniSpeed
     def getFlightTime(self):
-        timeInSeconds = round(((35000/self.flightSpeed)*(self.distance.getDistance()*1000/self.ship.getSpeed())**(0.5)+10)/self.uniSpeed)
+        timeInSeconds = round(((35000/self.flightSpeed)*(self.distance.getDistance()*1000/self.ship.getSpeed(app.classCombo.get()))**(0.5)+10)/self.uniSpeed)
         hours = int(str(timeInSeconds/3600).split(".")[0])
         remainder = timeInSeconds-hours*3600
         minutes = int(str(remainder/60).split(".")[0])
@@ -417,33 +458,24 @@ class TravelTime(object):
         
         
 def createShips(drives):
-    sc = Ship("Small Cargo", 5000, "Combustion",drives)
-    lc = Ship("Large Cargo", 7500, "Combustion",drives)
-    lf = Ship("Light Fighter", 12500, "Combustion",drives)
-    hf = Ship("Heavy Fighter", 10000, "Impulse",drives)
-    cru = Ship("Cruiser", 15000, "Impulse",drives)
-    bs = Ship("Battleship", 10000, "Hyper",drives)
-    colo = Ship("Colony Ship", 2500, "Impulse",drives)
-    rec = Ship("Recycler", 2000, "Combustion",drives)
-    bomb = Ship("Bomber", 4000, "Impulse",drives)
-    des = Ship("Destroyer", 5000, "Hyper",drives)
-    rip = Ship("Deathstar", 100, "Hyper",drives)
-    bc = Ship("Battlecruiser", 10000, "Hyper",drives)
-    return [sc,lc,lf,hf,cru,bs,colo,rec,bomb,des,rip,bc]
+    sc = Ship("Small Cargo", 5000, "Combustion",drives, "civil")
+    lc = Ship("Large Cargo", 7500, "Combustion",drives, "civil")
+    lf = Ship("Light Fighter", 12500, "Combustion",drives, "military")
+    hf = Ship("Heavy Fighter", 10000, "Impulse",drives, "military")
+    cru = Ship("Cruiser", 15000, "Impulse",drives, "military")
+    bs = Ship("Battleship", 10000, "Hyper",drives, "military")
+    colo = Ship("Colony Ship", 2500, "Impulse",drives, "civil")
+    rec = Ship("Recycler", 2000, "Combustion",drives, "civil")
+    bomb = Ship("Bomber", 4000, "Impulse",drives, "military")
+    des = Ship("Destroyer", 5000, "Hyper",drives, "military")
+    rip = Ship("Deathstar", 100, "Hyper",drives, "military")
+    bc = Ship("Battlecruiser", 10000, "Hyper",drives, "military")
+    rp = Ship("Reaper", 7000, "Hyper", drives, "military")
+    pf = Ship("Pathfinder", 12000, "Hyper", drives, "military")
+    return [sc,lc,lf,hf,cru,bs,colo,rec,bomb,des,rip,bc,rp,pf]
 
-"""
-coord1 = [3,105,8]
-coord2 = [3,62,8]
-distance1 = Distance(coord1,coord2,donutGalaxy,donutSystem,numberOfGalaxies)
-trtime1=TravelTime(sc,distance1, travelSpeed, uniSpeed)
-print(trtime1.getFlightTime())
-arrivalTime = [18,3,56]
-print(trtime1.getReturnTime(arrivalTime,3,[17,58,56])) -> also just for reference
-"""
-
-#LOGIC#########
 
 if __name__ == "__main__":
-    app = simpleapp_tk(None)
+    app = LanxCalc(None)
     app.title('LanxCalc')
     app.mainloop()
