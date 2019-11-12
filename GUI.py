@@ -23,6 +23,17 @@ class LanxCalc(tk.Tk):
             return "0"+digit
         else:
             return str(digit)
+    def getBoostRange(self, maxValue, increment): #just so I don't have to dig manually through the code if limits turn out to be different
+        output = []
+        assert(maxValue>increment)
+        currentValue = increment
+        while currentValue<=maxValue:
+            if int(currentValue)!=currentValue:
+                output.append(currentValue)
+            else:
+                output.append(int(currentValue)) #avoiding 1.0 etc
+            currentValue+=increment
+        return output
     def loadUni(self, path): #loads preset for uni settings (uni speed, number of galaxies, donut properties)
         source = open(path, 'r')
         raw = source.readlines()
@@ -43,6 +54,18 @@ class LanxCalc(tk.Tk):
                     self.donutSystemCheck.select()
                 elif int(parameter)==0:
                     self.donutSystemCheck.deselect()
+            elif command == "collectorboost":
+                parameter = float(parameter) #can't directly translate float string to int :(
+                if int(parameter) == parameter:
+                    self.collectorBoostCombo.set(int(parameter))
+                else:
+                    self.collectorBoostCombo.set(float(parameter))
+            elif command == "generalboost":
+                parameter = float(parameter)
+                if int(parameter) == parameter:
+                    self.generalBoostCombo.set(int(parameter))
+                else:
+                    self.generalBoostCombo.set(float(parameter))
     def saveUni(self, instance = 0): #instance is just so method can be called from bind, I don't need it
         uniSpeed = str(self.uniSpeedCombo.get())
         numberofGalaxies = str(self.numberofGalaxiesCombo.get())
@@ -54,7 +77,9 @@ class LanxCalc(tk.Tk):
             donutSystem = "1"
         else:
             donutSystem = "0"
-        settings = "speed %s\ngalaxies %s\ndonutgalaxy %s\ndonutsystem %s"%(uniSpeed,numberofGalaxies,donutGalaxy,donutSystem)
+        collectorBoost = str(self.collectorBoostCombo.get())
+        generalBoost = str(self.generalBoostCombo.get())
+        settings = "speed %s\ngalaxies %s\ndonutgalaxy %s\ndonutsystem %s\ncollectorboost %s\ngeneralboost %s"%(uniSpeed,numberofGalaxies,donutGalaxy,donutSystem,collectorBoost,generalBoost)
         
         output = open("preset.ini","w")
         output.write(settings)
@@ -139,7 +164,7 @@ class LanxCalc(tk.Tk):
         #frame with origin and destination coordinates
         coordinateFrame = tk.Frame(self,relief=tk.GROOVE,borderwidth = 2)
         self.makeWeight(coordinateFrame,maxColumns)
-        coordinateLabel = tk.Label(coordinateFrame,justify = tk.CENTER, text ="Destination Coordinates and Arrival Time")
+        coordinateLabel = tk.Label(coordinateFrame,justify = tk.CENTER, text ="Destination Coordinates and Arrival Time", font = ("Segoe UI",10,"bold"))
         coordinateLabel.grid(row=0,column=0,columnspan=maxColumns)        
         coordinateFrame.grid(row=2,column=0,columnspan=maxColumns,sticky = 'NSEW')
         arrivalLabel = tk.Label(coordinateFrame, justify = tk.CENTER, text = "Arrival Time:")
@@ -165,7 +190,7 @@ class LanxCalc(tk.Tk):
         uniOptionFrame = tk.Frame(self,relief=tk.GROOVE,borderwidth = 2)
         uniOptionFrame.grid(row=3,column=0,columnspan=maxColumns,sticky='NSEW')
         self.makeWeight(uniOptionFrame,maxColumns)
-        uniLabel = tk.Label(uniOptionFrame,justify = tk.CENTER, text = "Universe Settings")
+        uniLabel = tk.Label(uniOptionFrame,justify = tk.CENTER, text = "Universe Settings", font = ("Segoe UI",10,"bold"))
         uniSpeedLabel = tk.Label(uniOptionFrame,justify = tk.CENTER, text = "Uni Speed:")
         uniLabel.grid(row=0,column=0,columnspan=maxColumns)
         uniSpeedLabel.grid(row=1,column=0,columnspan = int(maxColumns/2),sticky='E')
@@ -191,6 +216,18 @@ class LanxCalc(tk.Tk):
         self.donutSystemCheck = tk.Checkbutton(uniOptionFrame, var = self.donutSystemVar,command = self.saveUni) #OPTION
         self.donutSystemCheck.select()
         self.donutSystemCheck.grid(row=4,column=10,columnspan=int(maxColumns/2),sticky='W')
+        collectorBoostLabel = tk.Label(uniOptionFrame, justify = tk.CENTER, text = "Collector speed boost:")
+        collectorBoostLabel.grid(row=5,column=0,columnspan=int(maxColumns/2), sticky = 'E')
+        self.collectorBoostCombo = ttk.Combobox(uniOptionFrame, values = self.getBoostRange(1,0.25), state = 'readonly', justify = tk.CENTER, width = 4)
+        self.collectorBoostCombo.grid(row=5,column=10,columnspan = int(maxColumns/2),sticky='W')
+        self.collectorBoostCombo.set(0.25)
+        self.collectorBoostCombo.bind("<<ComboboxSelected>>", self.saveUni)
+        generalBoostLabel = tk.Label(uniOptionFrame, justify = tk.CENTER, text = "General speed boost:")
+        generalBoostLabel.grid(row=6,column=0,columnspan=int(maxColumns/2), sticky = 'E')
+        self.generalBoostCombo = ttk.Combobox(uniOptionFrame, values = self.getBoostRange(1,0.25), state = 'readonly', justify = tk.CENTER, width = 4)
+        self.generalBoostCombo.grid(row=6,column=10,columnspan = int(maxColumns/2),sticky = 'W')
+        self.generalBoostCombo.set(0.25)
+        self.generalBoostCombo.bind("<<ComboboxSelected>>", self.saveUni)
         #DEFAULTS SET WHEN CREATING OBJECTS, NOW WE TRY TO LOAD FROM THE INI FILE
         self.loadUni("preset.ini")
         
@@ -198,7 +235,7 @@ class LanxCalc(tk.Tk):
         playerInfoFrame = tk.Frame(self,relief=tk.GROOVE,borderwidth = 2)
         playerInfoFrame.grid(row=4,column=0,columnspan=maxColumns,sticky = 'NSEW')
         self.makeWeight(playerInfoFrame,maxColumns)
-        playerInfoLabel = tk.Label(playerInfoFrame,justify = tk.CENTER,text = "Player Info")
+        playerInfoLabel = tk.Label(playerInfoFrame,justify = tk.CENTER,text = "Player Info", font = ("Segoe UI",10,"bold"))
         playerInfoLabel.grid(row=0,column=0,columnspan = maxColumns)
         combustionLabel = tk.Label(playerInfoFrame,justify = tk.CENTER, text = "Combustion Drive:")
         combustionLabel.grid(row=1,column=0,columnspan = int(maxColumns/2),sticky = 'E')
@@ -220,7 +257,7 @@ class LanxCalc(tk.Tk):
         fleetFrame = tk.Frame(self,relief=tk.GROOVE,borderwidth = 2)
         fleetFrame.grid(row=5, column=0, columnspan=maxColumns,sticky = 'NSEW')
         self.makeWeight(fleetFrame,maxColumns)
-        fleetLabel = tk.Label(fleetFrame,justify=tk.CENTER, text = "Fleet and origin coordinates")
+        fleetLabel = tk.Label(fleetFrame,justify=tk.CENTER, text = "Fleet and origin coordinates", font = ("Segoe UI",10,"bold"))
         fleetLabel.grid(row=0,column=0,columnspan=maxColumns)
         toLabel = tk.Label(fleetFrame, justify = tk.CENTER, text = "Coordinates:")
         toLabel.grid(row=1,column=0,columnspan = 5)        
@@ -244,11 +281,11 @@ class LanxCalc(tk.Tk):
         self.assumedSpeedCombo.set(100)
         recallLabel = tk.Label(fleetFrame,justify=tk.CENTER, text = "Recall server time:")
         recallLabel.grid(row=4,column=0,columnspan=8,sticky='E')
-        self.recallHourEntry = tk.Entry(fleetFrame,justify = tk.CENTER,width=6)
-        self.recallHourEntry.grid(row=4,column=8,columnspan=4,sticky='W')
-        self.recallMinuteEntry = tk.Entry(fleetFrame,justify = tk.CENTER,width=6)
-        self.recallMinuteEntry.grid(row=4,column=12,columnspan=4,sticky='W')
-        self.recallSecondEntry = tk.Entry(fleetFrame,justify = tk.CENTER,width=6)
+        self.recallHourEntry = tk.Entry(fleetFrame,justify = tk.CENTER,width=7)
+        self.recallHourEntry.grid(row=4,column=8,columnspan=4,sticky='E')
+        self.recallMinuteEntry = tk.Entry(fleetFrame,justify = tk.CENTER,width=7)
+        self.recallMinuteEntry.grid(row=4,column=12,columnspan=4)
+        self.recallSecondEntry = tk.Entry(fleetFrame,justify = tk.CENTER,width=7)
         self.recallSecondEntry.grid(row=4,column=16,columnspan=4,sticky='W')
         scanDelayLabel = tk.Label(fleetFrame, justify = tk.CENTER, text = "Time between scans:")
         scanDelayLabel.grid(row=6,column=0,columnspan=int(maxColumns/2),sticky ='E')
@@ -333,10 +370,10 @@ class Ship(object):
         classBonus = 0
         if playerClass == "General":
             if (self.name == "Recycler" or self.shipType == "military") and self.name != "Deathstar":
-                classBonus = 0.25
+                classBonus = float(app.generalBoostCombo.get()) #not quite sure why I get a string here (I explicitly add ints or floats in loadUni method), but hey! here's a shitty patch to work around it!
         elif playerClass == "Collector":
             if self.name == "Small Cargo" or self.name == "Large Cargo":
-                classBonus = 0.25
+                classBonus = float(app.collectorBoostCombo.get())
         self.speed = round(self.baseSpeed*(classBonus + 1 + self.multiplier*self.getDriveLevel(self.drive)))
         return int(self.speed)
     
