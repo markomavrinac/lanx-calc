@@ -473,6 +473,8 @@ class TravelTime(object):
                 returnTimeMinutes+=60
             while returnTimeHours<0:
                 returnTimeHours+=24
+            while returnTimeHours>23: #fixing overflow for some special cases of recall times
+                returnTimeHours-=24
             lateRecallTime = [returnTimeHours,returnTimeMinutes,returnTimeSeconds]
             
             earlyRecallTimeSeconds = lateRecallTime[2] - 2*delay
@@ -487,6 +489,8 @@ class TravelTime(object):
                 earlyRecallTimeMinutes+=60
             while earlyRecallTimeHours<0:
                 earlyRecallTimeHours+=24
+            while earlyRecallTimeHours>23:
+                earlyRecallTimeHours-=24
             earlyRecallTime = [earlyRecallTimeHours,earlyRecallTimeMinutes,earlyRecallTimeSeconds]
             
             return (earlyRecallTime,lateRecallTime)

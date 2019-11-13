@@ -8,7 +8,7 @@ bdist_msi_options = {
     }
 setup(
     name = "LanxCalc",
-    version = "0.9.2",
+    version = "0.9.4",
     description = "Calculate return times like a boss.",
     executables = [Executable("GUI.py", base = "Win32GUI", icon = "icon.ico")],
     options={'bdist_msi': bdist_msi_options,'build_exe':{'include_files':includeFiles}})
