@@ -1,3 +1,2 @@
-lanxcalc version 0.9.3
-- added dropdown menus for general and collector speed boosts (now also part of preset.ini and is loaded/saved along with other uni options)
-- further UI improvements
+lanxcalc version 0.9.4
+- fixed overflow issues in special cases of recall times
