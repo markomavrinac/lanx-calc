@@ -17,7 +17,7 @@ setup.py - cx_Freeze setup script
 
 icon.ico - required for setup script to work correctly
 
-preset.ini - settings file -> first two lines can be any number, last two lines are 0 for false or 1 for true.
+preset.ini - settings file -> first two lines can be any number, following two lines are 0 for false or 1 for true and last two lines represent general and collector speed bonuses
 
 Visit OGame EN LanxCalc forum topic for more info or questions or contact me on PM (savage)
 
