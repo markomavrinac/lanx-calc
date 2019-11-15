@@ -5,7 +5,8 @@ Features:
 - calculate speed, distance, travel time and return time
 - supports early recall and takes interval between scans into consideration
 - saves uni settings upon any changes*
-- operates with server times
+- operates with server times, works with dates for extra long deploy missions
+- assemble report and copy it on clipboard to share with other players
 
 *saving does not work unless the script is provided write permissions, in Program Files folder this usually isn't the case so it's recommended to install the script in Documents folder
 
