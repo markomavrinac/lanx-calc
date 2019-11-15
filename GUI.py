@@ -1,7 +1,17 @@
+
+"""
+
+               
+datetime(year, month, day[, hour[, minute[, second[, microsecond[,tzinfo]]]]])
+
+    The year, month and day arguments are required. tzinfo may be None, or an
+    instance of a tzinfo subclass. The remaining arguments may be ints.
+    """           
 import tkinter as tk
 from tkinter import ttk
 from tkinter import messagebox
-
+import datetime as dt
+import pyperclip
 class LanxCalc(tk.Tk):
     def __init__(self,parent):
         tk.Tk.__init__(self,parent)
@@ -91,7 +101,9 @@ class LanxCalc(tk.Tk):
             return 0
         else:
             return int(digit)
-    def calculate(self):
+    def getReport(self):
+        self.calculate(report=True)
+    def calculate(self,report = False):
         try:
             self.combo = int(self.combustionEntry.get())
             self.impulse = int(self.impulseEntry.get())
@@ -113,10 +125,12 @@ class LanxCalc(tk.Tk):
             origin = [int(self.fromGalaxyText.get()),int(self.fromSolarText.get()),int(self.fromSlotText.get())]
         except:
             messagebox.showinfo("Bad input", "Origin coordinates invalid!")
+            return
         try:
             destination = [int(self.toGalaxyText.get()),int(self.toSolarText.get()),int(self.toSlotText.get())]
         except:
             messagebox.showinfo("Bad input", "Destination coordinates invalid!")
+            return
         distance1 = Distance(origin, destination, self.donutGalaxy,self.donutSystem,self.numberOfGalaxies)
         ship = False #kinda crappy patch for recognizing if ship wasn't selected, gonna try format it better in the future
         for i in range(len(ships)):
@@ -127,9 +141,10 @@ class LanxCalc(tk.Tk):
             return
         travelTime = TravelTime(ship,distance1,self.travelSpeed,self.uniSpeed)
         try:
-            arrivalTime = [self.processInput(self.hourArrival.get()),self.processInput(self.minuteArrival.get()),self.processInput(self.secondArrival.get())]
+            arrivalTime = [self.processInput(self.yearArrival.get()),self.processInput(self.monthArrival.get()),self.processInput(self.dayArrival.get()),self.processInput(self.hourArrival.get()),self.processInput(self.minuteArrival.get()),self.processInput(self.secondArrival.get())]
         except:
             messagebox.showinfo("Bad input", "Arrival time invalid!")
+            return
         if len(self.scanDelayEntry.get())==0:
             scanDelay = 0
         else:
@@ -137,54 +152,113 @@ class LanxCalc(tk.Tk):
                 scanDelay = int(self.scanDelayEntry.get())
             except:
                 messagebox.showinfo("Bad input", "Scan delay invalid!")
+                return
         try:
-            recallTime = [self.processRecall(self.recallHourEntry.get()),self.processRecall(self.recallMinuteEntry.get()),self.processRecall(self.recallSecondEntry.get())] #SERVER TIME, NOT ETA
+            recallTime = [self.processRecall(self.recallYearEntry.get()),self.processRecall(self.recallMonthEntry.get()),self.processRecall(self.recallDayEntry.get()),self.processRecall(self.recallHourEntry.get()),self.processRecall(self.recallMinuteEntry.get()),self.processRecall(self.recallSecondEntry.get())] #SERVER TIME, NOT ETA
         except:
             messagebox.showinfo("Bad input", "Recall time invalid!")
-        if recallTime == [0,0,0]: #making sure it doesn't make double return times on definite recalls like when fleet reaches planet
+            return
+        if recallTime[3:6] == [0,0,0]: #making sure it doesn't make double return times on definite recalls like when fleet reaches planet
             recallTime = False
         returnTime = travelTime.getReturnTime(arrivalTime, scanDelay, recallTime)
         
-        #assembling report
-        self.speedContent.configure(text=str(ship.getSpeed(self.classCombo.get())))
-        self.distanceContent.configure(text =str(distance1.getDistance()))
-        self.travelTimeContent.configure(text=self.processOutput(travelTime.getFlightTime()[0])+":"+self.processOutput(travelTime.getFlightTime()[1])+":"+self.processOutput(travelTime.getFlightTime()[2]))
-        if len(returnTime)==3: #this is single return time because it's being returned as a list so its len is 3 for hh mm ss
-            self.returnTimeContent.configure(text=self.processOutput(returnTime[0])+":"+self.processOutput(returnTime[1])+":"+self.processOutput(returnTime[2]))
-        elif len(returnTime)==2: #double return time as it's a tuple of lists
-            self.returnTimeContent.configure(text=self.processOutput(returnTime[0][0])+":"+self.processOutput(returnTime[0][1])+":"+self.processOutput(returnTime[0][2])+" - "+self.processOutput(returnTime[1][0])+":"+self.processOutput(returnTime[1][1])+":"+self.processOutput(returnTime[1][2]))
-            
+        #assembling  GUI report
+        if report == False:
+            self.speedContent.configure(text=str(ship.getSpeed(self.classCombo.get())))
+            self.distanceContent.configure(text =str(distance1.getDistance()))
+            self.travelTimeContent.configure(text=self.processOutput(travelTime.getFlightTime()[0])+":"+self.processOutput(travelTime.getFlightTime()[1])+":"+self.processOutput(travelTime.getFlightTime()[2]))
+            if len(returnTime)==6: #this is single return time because it's being returned as a list so its len is 3 for hh mm ss
+                self.returnTimeContent.configure(text="[" +self.processOutput(returnTime[0])+"/"+self.processOutput(returnTime[1])+"/"+self.processOutput(returnTime[2])+ "] " + self.processOutput(returnTime[3])+":"+self.processOutput(returnTime[4])+":"+self.processOutput(returnTime[5]))
+            elif len(returnTime)==2: #double return time as it's a tuple of lists
+                self.returnTimeContent.configure(text="["+self.processOutput(returnTime[0][0])+"/"+self.processOutput(returnTime[0][1])+"/"+self.processOutput(returnTime[0][2])+ "]" + " " +self.processOutput(returnTime[0][3]) + ":" +self.processOutput(returnTime[0][4]) + ":" +self.processOutput(returnTime[0][5]) + " - " +self.processOutput(returnTime[1][3]) + ":" +self.processOutput(returnTime[1][4])+":"+self.processOutput(returnTime[1][5]))
+        else:
+            #assembling clipboard detailed report
+            output = "Target is returning from [%s %s %s] and landing to [%s %s %s] (Distance = %i) at following possible times:\n"%(self.toGalaxyText.get(),self.toSolarText.get(),self.toSlotText.get(),self.fromGalaxyText.get(),self.fromSolarText.get(),self.fromSlotText.get(), distance1.getDistance())
+            while int(self.travelSpeed)>=10:
+                travelTime = TravelTime(ship,distance1,self.travelSpeed,self.uniSpeed)
+                try:
+                    arrivalTime = [self.processInput(self.yearArrival.get()),self.processInput(self.monthArrival.get()),self.processInput(self.dayArrival.get()),self.processInput(self.hourArrival.get()),self.processInput(self.minuteArrival.get()),self.processInput(self.secondArrival.get())]
+                except:
+                    messagebox.showinfo("Bad input", "Arrival time invalid!")
+                    return
+                if len(self.scanDelayEntry.get())==0:
+                    scanDelay = 0
+                else:
+                    try:
+                        scanDelay = int(self.scanDelayEntry.get())
+                    except:
+                        messagebox.showinfo("Bad input", "Scan delay invalid!")
+                        return
+                try:
+                    recallTime = [self.processRecall(self.recallYearEntry.get()),self.processRecall(self.recallMonthEntry.get()),self.processRecall(self.recallDayEntry.get()),self.processRecall(self.recallHourEntry.get()),self.processRecall(self.recallMinuteEntry.get()),self.processRecall(self.recallSecondEntry.get())] #SERVER TIME, NOT ETA
+                except:
+                    messagebox.showinfo("Bad input", "Recall time invalid!")
+                    return
+                if recallTime[3:6] == [0,0,0]: #making sure it doesn't make double return times on definite recalls like when fleet reaches planet
+                    recallTime = False
+                returnTime = travelTime.getReturnTime(arrivalTime, scanDelay, recallTime)                
+                if len(returnTime)==6: 
+                    output+="("+str(self.travelSpeed)+"%) "+"[" +self.processOutput(returnTime[0])+"/"+self.processOutput(returnTime[1])+"/"+self.processOutput(returnTime[2])+ "] " + self.processOutput(returnTime[3])+":"+self.processOutput(returnTime[4])+":"+self.processOutput(returnTime[5])+"\n" #man I'd really string format this but after barely somehow assembling it I feel both ashamed and proud in the same time, will probably fixed in future versions 
+                elif len(returnTime)==2: #double return time as it's a tuple of lists
+                    output+="("+str(self.travelSpeed)+"%) "+"["+self.processOutput(returnTime[0][0])+"/"+self.processOutput(returnTime[0][1])+"/"+self.processOutput(returnTime[0][2])+ "]" + " " +self.processOutput(returnTime[0][3]) + ":" +self.processOutput(returnTime[0][4]) + ":" +self.processOutput(returnTime[0][5]) + " - " +self.processOutput(returnTime[1][3]) + ":" +self.processOutput(returnTime[1][4])+":"+self.processOutput(returnTime[1][5])+"\n"
+                self.travelSpeed-=10
+            else:
+                output+="(Combustion = %i, Impulse = %i, Hyperspace = %i, Slowest ship = %s)\n"%(self.combo,self.impulse,self.hyper,ship.name)
+                output+="\nReport generated with LanxCalc - a blind phalanx calculator."
+                pyperclip.copy(output)
+                
     def initialize(self):
         maxColumns = 20
         self.grid()
         self.makeWeight(self,maxColumns)
-        #self.entry.bind("<Return>", self.OnPressEnter)
-        titleLabel = tk.Label(self, justify=tk.CENTER, text = "LanxCalc by Savage")
-        titleLabel.grid(row=0,column=0,columnspan=maxColumns)
         #frame with origin and destination coordinates
         coordinateFrame = tk.Frame(self,relief=tk.GROOVE,borderwidth = 2)
         self.makeWeight(coordinateFrame,maxColumns)
-        coordinateLabel = tk.Label(coordinateFrame,justify = tk.CENTER, text ="Destination Coordinates and Arrival Time", font = ("Segoe UI",10,"bold"))
+        coordinateLabel = tk.Label(coordinateFrame,justify = tk.CENTER, text ="Coordinates and Arrival Time", font = ("Segoe UI",10,"bold"))
         coordinateLabel.grid(row=0,column=0,columnspan=maxColumns)        
         coordinateFrame.grid(row=2,column=0,columnspan=maxColumns,sticky = 'NSEW')
         arrivalLabel = tk.Label(coordinateFrame, justify = tk.CENTER, text = "Arrival Time:")
-        arrivalLabel.grid(row=1,column=0,columnspan=int(maxColumns/4))
-        self.hourArrival = tk.Entry(coordinateFrame,justify = tk.CENTER,width=10)
-        self.hourArrival.grid(row=1,column=5,columnspan=int(maxColumns/4))
-        self.minuteArrival = tk.Entry(coordinateFrame,justify = tk.CENTER,width=10)
-        self.minuteArrival.grid(row=1,column=10,columnspan=int(maxColumns/4))
-        self.secondArrival = tk.Entry(coordinateFrame,justify = tk.CENTER,width=10)
-        self.secondArrival.grid(row=1,column=15,columnspan=int(maxColumns/4)) 
-        toLabel = tk.Label(coordinateFrame, justify = tk.CENTER, text = "Coordinates:")
-        toLabel.grid(row=2,column=0,columnspan = 5)        
+        arrivalLabel.grid(row=1,column=0,columnspan=5,sticky = 'E')
+        arrivalFrame = tk.Frame(coordinateFrame,relief=tk.GROOVE,borderwidth = 2)
+        arrivalFrame.grid(row=1,column=5,columnspan=15,sticky='WE')
+        self.makeWeight(arrivalFrame,18)
+        self.dayArrival = tk.Entry(arrivalFrame,justify = tk.CENTER,width=4)
+        self.dayArrival.grid(row=0,column=0,columnspan=3)
+        self.monthArrival = tk.Entry(arrivalFrame,justify = tk.CENTER,width=4)
+        self.monthArrival.grid(row=0,column=3,columnspan=3)
+        self.yearArrival = tk.Entry(arrivalFrame,justify = tk.CENTER,width=6)
+        self.yearArrival.grid(row=0,column=6,columnspan=3)        
+        self.hourArrival = tk.Entry(arrivalFrame,justify = tk.CENTER,width=4)
+        self.hourArrival.grid(row=0,column=9,columnspan=3)
+        self.minuteArrival = tk.Entry(arrivalFrame,justify = tk.CENTER,width=4)
+        self.minuteArrival.grid(row=0,column=12,columnspan=3)
+        self.secondArrival = tk.Entry(arrivalFrame,justify = tk.CENTER,width=4)
+        self.secondArrival.grid(row=0,column=15,columnspan=3) 
+        currentTime = dt.datetime.now()
+        self.dayArrival.insert(0,str(currentTime.day))
+        self.monthArrival.insert(0,str(currentTime.month))
+        self.yearArrival.insert(0,str(currentTime.year))
+        fromLabel = tk.Label(coordinateFrame, justify = tk.CENTER, text = "Origin:")
+        fromLabel.grid(row=2,column=0,columnspan = 5)        
+        self.fromGalaxyText = tk.Entry(coordinateFrame,justify = tk.CENTER,width=10)
+        self.fromGalaxyText.grid(row=2,column=5,columnspan=int(maxColumns/4))
+        self.fromGalaxyText.insert(0,"1")
+        self.fromSolarText = tk.Entry(coordinateFrame,justify = tk.CENTER,width=10)
+        self.fromSolarText.grid(row=2,column=10,columnspan=int(maxColumns/4))
+        self.fromSolarText.insert(0,"1")
+        self.fromSlotText = tk.Entry(coordinateFrame,justify = tk.CENTER,width=10)
+        self.fromSlotText.grid(row=2,column=15,columnspan=int(maxColumns/4)) 
+        self.fromSlotText.insert(0,"1")        
+        toLabel = tk.Label(coordinateFrame, justify = tk.CENTER, text = "Destination:")
+        toLabel.grid(row=3,column=0,columnspan = 5)
         self.toGalaxyText = tk.Entry(coordinateFrame,justify = tk.CENTER,width=10)
-        self.toGalaxyText.grid(row=2,column=5,columnspan=int(maxColumns/4))
+        self.toGalaxyText.grid(row=3,column=5,columnspan=int(maxColumns/4))
         self.toGalaxyText.insert(0,"1")
         self.toSolarText = tk.Entry(coordinateFrame,justify = tk.CENTER,width=10)
-        self.toSolarText.grid(row=2,column=10,columnspan=int(maxColumns/4))
+        self.toSolarText.grid(row=3,column=10,columnspan=int(maxColumns/4))
         self.toSolarText.insert(0,"1")
         self.toSlotText = tk.Entry(coordinateFrame,justify = tk.CENTER,width=10)
-        self.toSlotText.grid(row=2,column=15,columnspan=int(maxColumns/4)) 
+        self.toSlotText.grid(row=3,column=15,columnspan=int(maxColumns/4)) 
         self.toSlotText.insert(0,"1")
         #UNI OPTIONS
         uniOptionFrame = tk.Frame(self,relief=tk.GROOVE,borderwidth = 2)
@@ -257,19 +331,8 @@ class LanxCalc(tk.Tk):
         fleetFrame = tk.Frame(self,relief=tk.GROOVE,borderwidth = 2)
         fleetFrame.grid(row=5, column=0, columnspan=maxColumns,sticky = 'NSEW')
         self.makeWeight(fleetFrame,maxColumns)
-        fleetLabel = tk.Label(fleetFrame,justify=tk.CENTER, text = "Fleet and origin coordinates", font = ("Segoe UI",10,"bold"))
+        fleetLabel = tk.Label(fleetFrame,justify=tk.CENTER, text = "Fleet", font = ("Segoe UI",10,"bold"))
         fleetLabel.grid(row=0,column=0,columnspan=maxColumns)
-        toLabel = tk.Label(fleetFrame, justify = tk.CENTER, text = "Coordinates:")
-        toLabel.grid(row=1,column=0,columnspan = 5)        
-        self.fromGalaxyText = tk.Entry(fleetFrame,justify = tk.CENTER,width=10)
-        self.fromGalaxyText.grid(row=1,column=5,columnspan=int(maxColumns/4))
-        self.fromGalaxyText.insert(0,"1")
-        self.fromSolarText = tk.Entry(fleetFrame,justify = tk.CENTER,width=10)
-        self.fromSolarText.grid(row=1,column=10,columnspan=int(maxColumns/4))
-        self.fromSolarText.insert(0,"1")
-        self.fromSlotText = tk.Entry(fleetFrame,justify = tk.CENTER,width=10)
-        self.fromSlotText.grid(row=1,column=15,columnspan=int(maxColumns/4)) 
-        self.fromSlotText.insert(0,"1")
         slowestShipLabel = tk.Label(fleetFrame, justify = tk.CENTER, text = "Slowest ship in fleet:")
         slowestShipLabel.grid(row=2,column=0,columnspan = int(maxColumns/2),sticky = 'E')
         self.slowestShipCombo = ttk.Combobox(fleetFrame, values = ["Small Cargo","Large Cargo", "Light Fighter", "Heavy Fighter", "Cruiser", "Battleship", "Colony Ship", "Recycler", "Bomber", "Destroyer","Deathstar", "Battlecruiser", "Reaper", "Pathfinder"],state = "readonly",width=12,justify = tk.CENTER)
@@ -279,14 +342,26 @@ class LanxCalc(tk.Tk):
         self.assumedSpeedCombo = ttk.Combobox(fleetFrame, values = [100,90,80,70,60,50,40,30,20,10],state="readonly",width=12,justify = tk.CENTER)
         self.assumedSpeedCombo.grid(row=3,column=10,columnspan=int(maxColumns/2),sticky='W')
         self.assumedSpeedCombo.set(100)
-        recallLabel = tk.Label(fleetFrame,justify=tk.CENTER, text = "Recall server time:")
-        recallLabel.grid(row=4,column=0,columnspan=8,sticky='E')
-        self.recallHourEntry = tk.Entry(fleetFrame,justify = tk.CENTER,width=7)
-        self.recallHourEntry.grid(row=4,column=8,columnspan=4,sticky='E')
-        self.recallMinuteEntry = tk.Entry(fleetFrame,justify = tk.CENTER,width=7)
-        self.recallMinuteEntry.grid(row=4,column=12,columnspan=4)
-        self.recallSecondEntry = tk.Entry(fleetFrame,justify = tk.CENTER,width=7)
-        self.recallSecondEntry.grid(row=4,column=16,columnspan=4,sticky='W')
+        recallLabel = tk.Label(fleetFrame,justify=tk.CENTER, text = "Recall time:")
+        recallLabel.grid(row=4,column=0,columnspan=5)
+        recallFrame=tk.Frame(fleetFrame,relief=tk.GROOVE,borderwidth = 2)
+        recallFrame.grid(row=4,column=5,columnspan=15,sticky='WE')
+        self.makeWeight(recallFrame,18)
+        self.recallDayEntry = tk.Entry(recallFrame,justify = tk.CENTER,width=4)
+        self.recallDayEntry.grid(row=0,column=0,columnspan=3)  
+        self.recallMonthEntry = tk.Entry(recallFrame,justify = tk.CENTER,width=4)
+        self.recallMonthEntry.grid(row=0,column=3,columnspan=3) 
+        self.recallYearEntry = tk.Entry(recallFrame,justify = tk.CENTER,width=6)
+        self.recallYearEntry.grid(row=0,column=6,columnspan=3)  
+        self.recallDayEntry.insert(0,str(currentTime.day))
+        self.recallMonthEntry.insert(0,str(currentTime.month))
+        self.recallYearEntry.insert(0,str(currentTime.year))        
+        self.recallHourEntry = tk.Entry(recallFrame,justify = tk.CENTER,width=4)
+        self.recallHourEntry.grid(row=0,column=9,columnspan=3)
+        self.recallMinuteEntry = tk.Entry(recallFrame,justify = tk.CENTER,width=4)
+        self.recallMinuteEntry.grid(row=0,column=12,columnspan=3)
+        self.recallSecondEntry = tk.Entry(recallFrame,justify = tk.CENTER,width=4)
+        self.recallSecondEntry.grid(row=0,column=15,columnspan=3)
         scanDelayLabel = tk.Label(fleetFrame, justify = tk.CENTER, text = "Time between scans:")
         scanDelayLabel.grid(row=6,column=0,columnspan=int(maxColumns/2),sticky ='E')
         self.scanDelayEntry = tk.Entry(fleetFrame, justify = tk.CENTER,width=10)
@@ -310,8 +385,10 @@ class LanxCalc(tk.Tk):
         returnTimeCaption.grid(row=6,column=0,columnspan=maxColumns)
         self.returnTimeContent = tk.Label(resultFrame, justify = tk.CENTER, text = "(not calculated)", font = ("Segoe UI",11))
         self.returnTimeContent.grid(row=7,column=0,columnspan=maxColumns)
+        reportButton = tk.Button(self,justify=tk.CENTER, text = "Copy report",command=self.getReport, font = ("Segoe UI",10,"bold"))
+        reportButton.grid(row=8,column=0,columnspan=6)
         calculateButton = tk.Button(self,justify=tk.CENTER, text = "Calculate",command=self.calculate, font = ("Segoe UI",10,"bold"))
-        calculateButton.grid(row=8,column=0,columnspan=maxColumns)
+        calculateButton.grid(row=8,column=6,columnspan=8,sticky="EW")
         
         
         
@@ -436,64 +513,25 @@ class TravelTime(object):
         return hours, minutes, seconds
     def getReturnTime(self,arrivalTime, delay, recallTime):
         flightTime = self.getFlightTime()
-        returnTimeSeconds = arrivalTime[2]+flightTime[2]
-        returnTimeMinutes = arrivalTime[1]+flightTime[1]
-        returnTimeHours = arrivalTime[0]+flightTime[0]
-        if returnTimeSeconds>=60:
-            returnTimeMinutes+=1
-            returnTimeSeconds-=60
-        if returnTimeMinutes>=60:
-            returnTimeHours+=1
-            returnTimeMinutes -= 60
-        while returnTimeHours>=24:
-            returnTimeHours -= 24
-        if recallTime==False:
-            return [returnTimeHours,returnTimeMinutes,returnTimeSeconds]
+        flightTime = dt.timedelta(hours=flightTime[0],minutes=flightTime[1],seconds=flightTime[2])
+        arrival = dt.datetime(int(arrivalTime[0]),int(arrivalTime[1]),int(arrivalTime[2]),int(arrivalTime[3]),int(arrivalTime[4]),int(arrivalTime[5])) #year,month,day,hour,minute,second
+        returnTime = arrival + flightTime
+        
+        if recallTime == False:
+            return [returnTime.day,returnTime.month,returnTime.year,returnTime.hour,returnTime.minute,returnTime.second]
+        
         else:
-            recallIntervalHours = arrivalTime[0]-recallTime[0]
-            recallIntervalMinutes = arrivalTime[1]-recallTime[1]
-            recallIntervalSeconds = arrivalTime[2]-recallTime[2]
+            recallTime = dt.datetime(int(recallTime[0]),int(recallTime[1]),int(recallTime[2]),int(recallTime[3]),int(recallTime[4]),int(recallTime[5]))
+            recallInterval = arrival - recallTime
             
-            if recallIntervalSeconds<0:
-                recallIntervalSeconds+=60
-                recallIntervalMinutes-=1
-            if recallIntervalMinutes<0:
-                recallIntervalHours-=1
-                recallIntervalMinutes+=60
-            #latest possible return time
-            returnTimeSeconds -= recallIntervalSeconds*2
-            returnTimeMinutes -= recallIntervalMinutes*2
-            returnTimeHours -= recallIntervalHours*2
-            
-            while returnTimeSeconds<0:
-                returnTimeMinutes-=1
-                returnTimeSeconds+=60
-            while returnTimeMinutes<0:
-                returnTimeHours-=1
-                returnTimeMinutes+=60
-            while returnTimeHours<0:
-                returnTimeHours+=24
-            while returnTimeHours>23: #fixing overflow for some special cases of recall times
-                returnTimeHours-=24
-            lateRecallTime = [returnTimeHours,returnTimeMinutes,returnTimeSeconds]
-            
-            earlyRecallTimeSeconds = lateRecallTime[2] - 2*delay
-            earlyRecallTimeMinutes = lateRecallTime[1]
-            earlyRecallTimeHours = lateRecallTime[0]
-            
-            while earlyRecallTimeSeconds<0:
-                earlyRecallTimeMinutes-=1
-                earlyRecallTimeSeconds+=60
-            while earlyRecallTimeMinutes<0:
-                earlyRecallTimeHours-=1
-                earlyRecallTimeMinutes+=60
-            while earlyRecallTimeHours<0:
-                earlyRecallTimeHours+=24
-            while earlyRecallTimeHours>23:
-                earlyRecallTimeHours-=24
-            earlyRecallTime = [earlyRecallTimeHours,earlyRecallTimeMinutes,earlyRecallTimeSeconds]
-            
-            return (earlyRecallTime,lateRecallTime)
+            #latest return time
+            lateReturnTime = returnTime - 2*recallInterval
+            delay = dt.timedelta(seconds=int(delay))
+            earlyReturnTime = lateReturnTime - 2*delay
+            if lateReturnTime == earlyReturnTime:
+                return [earlyReturnTime.day,earlyReturnTime.month,earlyReturnTime.year,earlyReturnTime.hour,earlyReturnTime.minute,earlyReturnTime.second]
+            else:
+                return([earlyReturnTime.day,earlyReturnTime.month,earlyReturnTime.year,earlyReturnTime.hour,earlyReturnTime.minute,earlyReturnTime.second],[lateReturnTime.day,lateReturnTime.month,lateReturnTime.year,lateReturnTime.hour,lateReturnTime.minute,lateReturnTime.second]) #a tuple of lists
     
                 
         
@@ -519,4 +557,5 @@ def createShips(drives):
 if __name__ == "__main__":
     app = LanxCalc(None)
     app.title('LanxCalc')
+    app.resizable(False,False)
     app.mainloop()
