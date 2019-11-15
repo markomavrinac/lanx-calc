@@ -1,2 +1,6 @@
-lanxcalc version 0.9.4
-- fixed overflow issues in special cases of recall times
+lanxcalc version 1.0.0
+
+- replaced old time calculation algorithm with a much more robust one
+- now includes dates into calculation in case of long travel times
+- added "copy report" feature (still in test phase)
+- GUI made a bit more complex
