@@ -4,3 +4,8 @@ lanxcalc version 1.0.0
 - now includes dates into calculation in case of long travel times
 - added "copy report" feature (still in test phase)
 - GUI made a bit more complex
+
+lanxcalc version 1.0.1
+
+- improved code structure and removed some of the less intuitive code
+- improved report form, now it gives better info and is aligned to read easier
