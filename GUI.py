@@ -6,7 +6,8 @@ datetime(year, month, day[, hour[, minute[, second[, microsecond[,tzinfo]]]]])
 
     The year, month and day arguments are required. tzinfo may be None, or an
     instance of a tzinfo subclass. The remaining arguments may be ints.
-    """           
+    """   
+version = "1.0.1"
 import tkinter as tk
 from tkinter import ttk
 from tkinter import messagebox
@@ -173,7 +174,7 @@ class LanxCalc(tk.Tk):
                 self.returnTimeContent.configure(text="["+self.processOutput(returnTime[0][0])+"/"+self.processOutput(returnTime[0][1])+"/"+self.processOutput(returnTime[0][2])+ "]" + " " +self.processOutput(returnTime[0][3]) + ":" +self.processOutput(returnTime[0][4]) + ":" +self.processOutput(returnTime[0][5]) + " - " +self.processOutput(returnTime[1][3]) + ":" +self.processOutput(returnTime[1][4])+":"+self.processOutput(returnTime[1][5]))
         else:
             #assembling clipboard detailed report
-            output = "Target is returning from [%s %s %s] and landing to [%s %s %s] (Distance = %i) at following possible times:\n"%(self.toGalaxyText.get(),self.toSolarText.get(),self.toSlotText.get(),self.fromGalaxyText.get(),self.fromSolarText.get(),self.fromSlotText.get(), distance1.getDistance())
+            output = ("Target is returning from [%s %s %s] and landing to [%s %s %s]\n"%(self.toGalaxyText.get(),self.toSolarText.get(),self.toSlotText.get(),self.fromGalaxyText.get(),self.fromSolarText.get(),self.fromSlotText.get())).center(40, " ")
             while int(self.travelSpeed)>=10:
                 travelTime = TravelTime(ship,distance1,self.travelSpeed,self.uniSpeed)
                 try:
@@ -198,13 +199,19 @@ class LanxCalc(tk.Tk):
                     recallTime = False
                 returnTime = travelTime.getReturnTime(arrivalTime, scanDelay, recallTime)                
                 if len(returnTime)==6: 
-                    output+="("+str(self.travelSpeed)+"%) "+"[" +self.processOutput(returnTime[0])+"/"+self.processOutput(returnTime[1])+"/"+self.processOutput(returnTime[2])+ "] " + self.processOutput(returnTime[3])+":"+self.processOutput(returnTime[4])+":"+self.processOutput(returnTime[5])+"\n" #man I'd really string format this but after barely somehow assembling it I feel both ashamed and proud in the same time, will probably fixed in future versions 
+                    output+= ("                    (%s%%) [%s/%s/%s] %s:%s:%s\n"%(str(self.travelSpeed),self.processOutput(returnTime[0]),self.processOutput(returnTime[1]),self.processOutput(returnTime[2]),self.processOutput(returnTime[3]),self.processOutput(returnTime[4]),self.processOutput(returnTime[5])))
+                        
+                    #output+=("("+str(self.travelSpeed)+"%) "+"[" +self.processOutput(returnTime[0])+"/"+self.processOutput(returnTime[1])+"/"+self.processOutput(returnTime[2])+ "] " + self.processOutput(returnTime[3])+":"+self.processOutput(returnTime[4])+":"+self.processOutput(returnTime[5])+"\n").center(40, " ") #man I'd really string format this but after barely somehow assembling it I feel both ashamed and proud in the same time, will probably fixed in future versions 
                 elif len(returnTime)==2: #double return time as it's a tuple of lists
-                    output+="("+str(self.travelSpeed)+"%) "+"["+self.processOutput(returnTime[0][0])+"/"+self.processOutput(returnTime[0][1])+"/"+self.processOutput(returnTime[0][2])+ "]" + " " +self.processOutput(returnTime[0][3]) + ":" +self.processOutput(returnTime[0][4]) + ":" +self.processOutput(returnTime[0][5]) + " - " +self.processOutput(returnTime[1][3]) + ":" +self.processOutput(returnTime[1][4])+":"+self.processOutput(returnTime[1][5])+"\n"
+                    output+= ("                    ("+str(self.travelSpeed)+"%) "+"["+self.processOutput(returnTime[0][0])+"/"+self.processOutput(returnTime[0][1])+"/"+self.processOutput(returnTime[0][2])+ "]" + " " +self.processOutput(returnTime[0][3]) + ":" +self.processOutput(returnTime[0][4]) + ":" +self.processOutput(returnTime[0][5]) + " - " +self.processOutput(returnTime[1][3]) + ":" +self.processOutput(returnTime[1][4])+":"+self.processOutput(returnTime[1][5])+"\n")
                 self.travelSpeed-=10
             else:
-                output+="(Combustion = %i, Impulse = %i, Hyperspace = %i, Slowest ship = %s)\n"%(self.combo,self.impulse,self.hyper,ship.name)
-                output+="\nReport generated with LanxCalc - a blind phalanx calculator."
+                if recallTime and not recallTime[3:6]==[0,0,0]:
+                    output+= "       (Considering a recall at [%s/%s/%s] %s:%s:%s)\n"%(self.recallDayEntry.get(),self.recallMonthEntry.get(),self.recallYearEntry.get(),self.recallHourEntry.get(),self.recallMinuteEntry.get(),self.recallSecondEntry.get())               
+                output+=("    Combustion = %i | Impulse = %i | Hyperspace = %i\n"%(self.combo,self.impulse,self.hyper))
+                output+=("                       Slowest ship: %s\n"%(ship.name))
+                output+=("                          Player Class: %s\n"%(self.classCombo.get()))
+                output+=("\n               Report generated with LanxCalc %s."%(version))
                 pyperclip.copy(output)
                 
     def initialize(self):
@@ -558,4 +565,5 @@ if __name__ == "__main__":
     app = LanxCalc(None)
     app.title('LanxCalc')
     app.resizable(False,False)
+    app.iconbitmap('icon.ico')
     app.mainloop()

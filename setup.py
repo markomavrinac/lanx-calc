@@ -1,5 +1,6 @@
 import sys
 from cx_Freeze import setup, Executable
+import GUI
 
 includeFiles = ['preset.ini','changelog.txt','icon.ico']
 bdist_msi_options = {
@@ -8,7 +9,7 @@ bdist_msi_options = {
     }
 setup(
     name = "LanxCalc",
-    version = "1.0.0",
+    version = GUI.version,
     description = "Calculate return times like a boss.",
     executables = [Executable("GUI.py", base = "Win32GUI", icon = "icon.ico")],
     options={'bdist_msi': bdist_msi_options,'build_exe':{'include_files':includeFiles}})
